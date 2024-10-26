@@ -51,6 +51,7 @@ Upon successful authentication, the script will attempt to retrieve data from mu
 - `Doors and Windows`: Retrieves the status of doors and windows.
 - `Leakage Detectors`: Retrieves data on any leakage detectors.
 - `Smoke Detectors`: Retrieves smoke detector statuses.
+- `Cameras`: Retrieves camera statuses.
 `get_consolidated_data()`: Combines all retrieved data and outputs it as a JSON-formatted string.
 
 ### Example Output

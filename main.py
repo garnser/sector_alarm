@@ -65,7 +65,8 @@ class SectorAlarmAPI:
             "Humidity": ("GET", f"{API_URL}/api/housecheck/panels/{self.panel_id}/humidity"),
             "Doors and Windows": ("POST", f"{API_URL}/api/v2/housecheck/doorsandwindows"),
             "Leakage Detectors": ("POST", f"{API_URL}/api/v2/housecheck/leakagedetectors"),
-            "Smoke Detectors": ("POST", f"{API_URL}/api/v2/housecheck/smokedetectors")
+            "Smoke Detectors": ("POST", f"{API_URL}/api/v2/housecheck/smokedetectors"),
+            "Cameras": ("GET", f"{API_URL}/api/v2/housecheck/cameras/{self.panel_id}")
         }
 
         headers = {

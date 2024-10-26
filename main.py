@@ -1,7 +1,8 @@
-from sectoralarm import SectorAlarmAPI
+# main.py
+
+from sectoralarm import SectorAlarmAPI, AuthenticationError
 import json
-import os
-import sys
+from datetime import datetime
 
 def main():
     # Load configuration
@@ -17,8 +18,13 @@ def main():
         return
 
     api = SectorAlarmAPI(email, password, panel_id, panel_code)
-    api.login()
-    api.load_cache()
+    try:
+        api.login()
+    except AuthenticationError as e:
+        print(e)
+        return
+
+    api.cache_manager.load_cache()
     # Start interactive session
     interactive_mode(api)
 
@@ -29,17 +35,20 @@ def interactive_mode(api):
         print("2. Rebuild cache")
         print("3. Show cache statistics")
         print("4. Lock/Unlock Doors")
+        print("5. Arm/Disarm System")
         print("F. Fetch all data")
         print("0. Exit")
         choice = input("Select an option: ")
         if choice == "1":
             select_category(api)
         elif choice == "2":
-            api.rebuild_cache()
+            api.cache_manager.rebuild_cache()
         elif choice == "3":
             cache_statistics(api)
         elif choice == "4":
             lock_unlock_doors(api)
+        elif choice == "5":
+            arm_disarm_system(api)
         elif choice.upper() == "F":
             fetch_all_data(api)
         elif choice == "0":
@@ -49,7 +58,7 @@ def interactive_mode(api):
 
 def select_category(api):
     print("\nCategories:")
-    categories = list(api.cache.keys())
+    categories = list(api.cache_manager.cache.keys())
     for idx, cat in enumerate(categories):
         print(f"{idx + 1}. {cat}")
     print("0. Back")
@@ -59,24 +68,80 @@ def select_category(api):
             pass
         elif 1 <= choice <= len(categories):
             category = categories[choice - 1]
-            navigate_structure(api, api.cache[category], [{'key': category, 'display': category}], key_path=[])
+            navigate_structure(api, category, [{'key': category, 'display': category}], key_path=[])
         else:
             print("Invalid choice.")
     except ValueError:
         print("Invalid input. Please enter a number.")
 
-def navigate_structure(api, structure, path, key_path):
-    if isinstance(structure, dict):
+def navigate_structure(api, current_structure, path, key_path):
+    if isinstance(current_structure, str):
+        # At the top level, current_structure is the category name
+        category = current_structure
+        if category.lower() == 'logs':
+            # Fetch the actual logs data from the API
+            data = api.retrieve_category_data(category)
+            if data is None:
+                print("Failed to retrieve logs.")
+                input("Press Enter to continue...")
+                return
+            # Assuming the logs data is a list
+            structure = data
+            if not isinstance(structure, list):
+                print("Unexpected data format for logs.")
+                input("Press Enter to continue...")
+                return
+            # Sort the logs by Time
+            structure = sorted(structure, key=lambda x: x.get('Time', ''), reverse=True)
+            # Now display the logs
+            while True:
+                print(f"\n{get_display_path(path)}")
+                print("Items:")
+                for idx, item in enumerate(structure):
+                    identifier = get_identifier(item)
+                    print(f"{idx + 1}. {identifier}")
+                print("0. Back")
+                print("F. Fetch data for this level")
+                choice = input("Select an item (by number) or F to fetch data: ")
+                if choice == "0":
+                    break
+                elif choice.upper() == "F":
+                    # Fetch and display data for this level
+                    data = api.retrieve_category_data(category)
+                    print(json.dumps(data, indent=4, ensure_ascii=False))
+                    input("Press Enter to continue...")
+                elif choice.isdigit():
+                    idx_choice = int(choice)
+                    if 1 <= idx_choice <= len(structure):
+                        item = structure[idx_choice - 1]
+                        identifier = get_identifier(item)
+                        new_path = path + [{'key': str(idx_choice - 1), 'display': identifier}]
+                        # Display the log entry
+                        print(f"\n{get_display_path(new_path)}")
+                        print(json.dumps(item, indent=4, ensure_ascii=False))
+                        input("Press Enter to continue...")
+                    else:
+                        print("Invalid choice.")
+                else:
+                    print("Invalid input.")
+        else:
+            # For other categories, proceed as before
+            structure = api.cache_manager.cache.get(category)
+            if structure is None:
+                print(f"No data available for category '{category}'.")
+                return
+            navigate_structure(api, structure, path, key_path)
+    elif isinstance(current_structure, dict):
         # Directly navigate into 'Places', 'Components', 'Sections' if they exist
-        for key in ['Places', 'Components', 'Sections']:
-            if key in structure:
+        for key in current_structure.keys():
+            if key.lower() in ['places', 'components', 'sections']:
                 display_name = key
                 new_path = path + [{'key': key, 'display': display_name}]
                 new_key_path = key_path + [key]
-                navigate_structure(api, structure[key], new_path, new_key_path)
+                navigate_structure(api, current_structure[key], new_path, new_key_path)
                 return
         # If all values are None or not dict/list, fetch and display data
-        if all(not isinstance(value, (dict, list)) for value in structure.values()):
+        if all(not isinstance(value, (dict, list)) for value in current_structure.values()):
             data = fetch_data_at_path(api, path)
             print(f"\n{get_display_path(path)}")
             print(json.dumps(data, indent=4, ensure_ascii=False))
@@ -84,7 +149,7 @@ def navigate_structure(api, structure, path, key_path):
             return
         else:
             # Else, show sections
-            keys = list(structure.keys())
+            keys = list(current_structure.keys())
             while True:
                 print(f"\n{get_display_path(path)}")
                 print("Sections:")
@@ -107,31 +172,32 @@ def navigate_structure(api, structure, path, key_path):
                         display_name = key
                         new_path = path + [{'key': key, 'display': display_name}]
                         new_key_path = key_path + [key]
-                        sub_structure = structure[key]
+                        sub_structure = current_structure[key]
                         navigate_structure(api, sub_structure, new_path, new_key_path)
                         return
                     else:
                         print("Invalid choice.")
                 else:
                     print("Invalid input.")
-    elif isinstance(structure, list):
-        if not structure:
+    elif isinstance(current_structure, list):
+        if not current_structure:
             print(f"\n{get_display_path(path)}")
             print("This list is empty.")
             input("Press Enter to go back.")
             return
         # If there's only one item, automatically navigate into it
-        if len(structure) == 1:
-            item = structure[0]
+        if len(current_structure) == 1:
+            item = current_structure[0]
             identifier = get_identifier(item)
             new_path = path + [{'key': '0', 'display': identifier}]
             navigate_structure(api, item, new_path, key_path)
             return
         else:
+            # Display the list items
             while True:
                 print(f"\n{get_display_path(path)}")
                 print("Items:")
-                for idx, item in enumerate(structure):
+                for idx, item in enumerate(current_structure):
                     identifier = get_identifier(item)
                     print(f"{idx + 1}. {identifier}")
                 print("0. Back")
@@ -143,11 +209,11 @@ def navigate_structure(api, structure, path, key_path):
                     data = fetch_data_at_path(api, path)
                     print(json.dumps(data, indent=4, ensure_ascii=False))
                     input("Press Enter to continue...")
-                    return  # Return after fetching data
+                    return
                 elif choice.isdigit():
                     idx_choice = int(choice)
-                    if 1 <= idx_choice <= len(structure):
-                        item = structure[idx_choice - 1]
+                    if 1 <= idx_choice <= len(current_structure):
+                        item = current_structure[idx_choice - 1]
                         identifier = get_identifier(item)
                         new_path = path + [{'key': str(idx_choice - 1), 'display': identifier}]
                         navigate_structure(api, item, new_path, key_path)
@@ -166,9 +232,18 @@ def navigate_structure(api, structure, path, key_path):
 def get_identifier(item):
     """Get a meaningful identifier for list items."""
     if isinstance(item, dict):
+        if 'Time' in item and item['Time']:
+            value = item['Time']
+            # Format the time
+            try:
+                dt = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
+                return dt.strftime("%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                return value  # Return unformatted if parsing fails
+        # Fallback to other identifiers
         for key in ['Name', 'Label', 'Id', 'Key']:
             if key in item and item[key]:
-                return f"{item.get(key)}"
+                return str(item[key])
         return "Item"
     else:
         return str(item)
@@ -204,7 +279,7 @@ def fetch_data_at_path(api, path):
 def fetch_all_data(api):
     """Fetch all data from all categories."""
     all_data = {}
-    for category in api.cache.keys():
+    for category in api.cache_manager.cache.keys():
         data = api.retrieve_category_data(category)
         if data is not None:
             all_data[category] = data
@@ -213,7 +288,7 @@ def fetch_all_data(api):
 
 def cache_statistics(api):
     """Display statistics of the cache."""
-    num_categories = len(api.cache)
+    num_categories = len(api.cache_manager.cache)
     num_sections = 0
     num_items = 0
 
@@ -228,7 +303,7 @@ def cache_statistics(api):
             for item in node:
                 traverse(item)
 
-    for category in api.cache.values():
+    for category in api.cache_manager.cache.values():
         traverse(category)
 
     print("\nCache Statistics:")
@@ -239,6 +314,7 @@ def cache_statistics(api):
 
 def lock_unlock_doors(api):
     """Allow user to lock or unlock doors."""
+    # Use api.actions_manager for action methods
     # Retrieve lock status to get the list of locks
     locks_data = api.retrieve_category_data("Lock Status")
     if locks_data is None or not locks_data:
@@ -266,13 +342,13 @@ def lock_unlock_doors(api):
             # Ask for action
             action = input(f"Do you want to (L)ock or (U)nlock '{lock_label}'? ").upper()
             if action == "L":
-                success = api.lock_door(lock_serial)
+                success = api.actions_manager.lock_door(lock_serial)
                 if success:
                     print("Door locked successfully.")
                 else:
                     print("Failed to lock the door.")
             elif action == "U":
-                success = api.unlock_door(lock_serial)
+                success = api.actions_manager.unlock_door(lock_serial)
                 if success:
                     print("Door unlocked successfully.")
                 else:
@@ -284,6 +360,40 @@ def lock_unlock_doors(api):
     except ValueError:
         print("Invalid input. Please enter a number.")
     input("Press Enter to continue...")
+
+def arm_disarm_system(api):
+    """Allow user to arm or disarm the security system."""
+    while True:
+        print("\nArm/Disarm Menu:")
+        print("1. Arm System")
+        print("2. Disarm System")
+        print("3. Get System Status")
+        print("0. Back")
+        choice = input("Select an option: ")
+        if choice == "1":
+            success = api.actions_manager.arm_system()
+            if success:
+                print("System armed successfully.")
+            else:
+                print("Failed to arm the system.")
+        elif choice == "2":
+            success = api.actions_manager.disarm_system()
+            if success:
+                print("System disarmed successfully.")
+            else:
+                print("Failed to disarm the system.")
+        elif choice == "3":
+            status = api.actions_manager.get_system_status()
+            if status:
+                print("System Status:")
+                print(json.dumps(status, indent=4, ensure_ascii=False))
+            else:
+                print("Failed to retrieve system status.")
+        elif choice == "0":
+            break
+        else:
+            print("Invalid choice.")
+        input("Press Enter to continue...")
 
 if __name__ == "__main__":
     main()

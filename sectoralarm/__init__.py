@@ -1,0 +1,1 @@
+from .sectoralarm import SectorAlarmAPI

@@ -143,7 +143,6 @@ class SectorAlarmAPI:
             print("2. Rebuild cache")
             print("3. Show cache statistics")
             print("4. Lock/Unlock Doors")
-            print("5. Arm/Disarm Alarm")
             print("F. Fetch all data")
             print("0. Exit")
             choice = input("Select an option: ")
@@ -155,8 +154,6 @@ class SectorAlarmAPI:
                 self.cache_statistics()
             elif choice == "4":
                 self.lock_unlock_doors()
-            elif choice == "5":
-                self.arm_disarm_alarm()
             elif choice.upper() == "F":
                 self.fetch_all_data()
             elif choice == "0":
@@ -375,9 +372,6 @@ class SectorAlarmAPI:
             # Lock/Unlock endpoints
             "Unlock": ("POST", f"{API_URL}/api/Panel/Unlock"),
             "Lock": ("POST", f"{API_URL}/api/Panel/Lock"),
-            # Arm/Disarm endpoints
-            "Arm": ("POST", f"{API_URL}/api/Panel/Arm"),
-            "Disarm": ("POST", f"{API_URL}/api/Panel/Disarm"),
         }
         return endpoints
 
@@ -467,63 +461,6 @@ class SectorAlarmAPI:
             print("Door unlocked successfully.")
         else:
             print(f"Failed to unlock door. Status code: {response.status_code}")
-            print(response.text)
-        input("Press Enter to continue...")
-
-    def arm_disarm_alarm(self):
-        """Allow user to arm or disarm the alarm."""
-        # Ask the user whether to arm or disarm
-        action = input("Do you want to (A)rm or (D)isarm the alarm? ").upper()
-        if action == "A":
-            self.arm_alarm()
-        elif action == "D":
-            self.disarm_alarm()
-        else:
-            print("Invalid action.")
-            input("Press Enter to return to the main menu.")
-
-    def arm_alarm(self):
-        """Arm the alarm system."""
-        endpoint = self.get_all_endpoints()["Arm"]
-        method, url = endpoint
-
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": AUTH_TOKEN,
-            "API-Version": "5"
-        }
-        payload = {
-            "PanelId": self.panel_id
-        }
-
-        response = self.session.post(url, headers=headers, json=payload, timeout=30)
-        if response.status_code == 200:
-            print("Alarm armed successfully.")
-        else:
-            print(f"Failed to arm alarm. Status code: {response.status_code}")
-            print(response.text)
-        input("Press Enter to continue...")
-
-    def disarm_alarm(self):
-        """Disarm the alarm system."""
-        endpoint = self.get_all_endpoints()["Disarm"]
-        method, url = endpoint
-
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": AUTH_TOKEN,
-            "API-Version": "5"
-        }
-        payload = {
-            "PanelCode": self.panel_code,
-            "PanelId": self.panel_id
-        }
-
-        response = self.session.post(url, headers=headers, json=payload, timeout=30)
-        if response.status_code == 200:
-            print("Alarm disarmed successfully.")
-        else:
-            print(f"Failed to disarm alarm. Status code: {response.status_code}")
             print(response.text)
         input("Press Enter to continue...")
 

@@ -1,5 +1,6 @@
 {
   "email": "email@domain.com",
   "password": "password",
-  "panel_id": "12345678"
+  "panel_id": "12345678",
+  "panel_code": "your_panel_code"
 }

@@ -1,86 +1,129 @@
-# Sector Alarm API Data Retrieval Script
+# SectorAlarm Client Application
 
-This Python script authenticates with the Sector Alarm API and retrieves various sensor data, including temperature, humidity, doors and windows status, smoke detectors, and leakage detectors. The results are consolidated and output as a JSON object.
+An interactive command-line application for interacting with Sector Alarm systems using the `sectoralarm` library.
+
+## Overview
+
+This client application allows users to interact with their Sector Alarm systems via a command-line interface. It provides functionalities to:
+
+- Navigate and view system categories and data
+- Arm and disarm the security system
+- Lock and unlock doors
+- Rebuild the local cache
+- Fetch and display data from the system
+
+## Features
+
+- **Interactive Menu**: Navigate through system categories and data interactively.
+- **Control Actions**: Arm/disarm the system and lock/unlock doors directly from the CLI.
+- **Data Fetching**: Fetch and display data for specific categories or the entire system.
+- **Cache Management**: Rebuild and view statistics of the local data cache.
 
 ## Prerequisites
 
-- **Python 3.6+**: Make sure Python is installed on your system.
-- **Environment Variables**: Set the following environment variables:
-  - `SA_EMAIL`: Your Sector Alarm account email.
-  - `SA_PASSWORD`: Your Sector Alarm account password.
-  - `SA_PANELID`: The ID of the panel you wish to retrieve data from.
+- **Python 3.6** or higher
+- **sectoralarm** library installed
+- **Internet Connection**: Required to communicate with the Sector Alarm API
 
-### Dependencies
+## Installation
 
-Install the required dependencies using `pip`:
+### Clone the Repository
 
 ```bash
-pip install requests
+git clone https://github.com/garnser/sector_alarm.git
+cd sector_alarm
+```
+
+### Install Dependencies
+It's recommended to use a virtual environment.
+
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+pip install sectoralarm
 ```
 
 ## Configuration
-The script relies on the following environment variables for authentication and panel identification:
+Create a config.json file in the root directory with your Sector Alarm credentials and panel information.
 
-- `SA_EMAIL`: Sector Alarm account email.
-- `SA_PASSWORD`: Sector Alarm account password.
-- `SA_PANELID`: Sector Alarm panel ID.
-You can set these in your shell session:
-
-```bash
-export SA_EMAIL="your_email@example.com"
-export SA_PASSWORD="your_password"
-export SA_PANELID="your_panel_id"
-```
-
-Alternatively, you can create a .env file and load it before running the script.
-
-## Usage
-Run the script as follows:
-
-```bash
-python sector_alarm.py
-```
-
-Upon successful authentication, the script will attempt to retrieve data from multiple endpoints and output it in JSON format.
-
-## Script Structure
-- `login()`: Authenticates with the Sector Alarm API and retrieves an authorization token.
-- `try_panel_endpoints()`: Fetches data from various /api/panel endpoints, including `GetPanelStatus`, `GetSmartplugStatus`, `GetLockStatus` and `GetLogs`.
-- `try_housecheck_endpoints()`: Fetches data from various `/api/housecheck` and `/api/v2/housecheck` endpoints, including:
-- `Humidity`: Retrieves humidity levels.
-- `Doors and Windows`: Retrieves the status of doors and windows.
-- `Leakage Detectors`: Retrieves data on any leakage detectors.
-- `Smoke Detectors`: Retrieves smoke detector statuses.
-- `Cameras`: Retrieves camera statuses.
-- `Persons`: Retrieves person information.
-- `Temperatures`: Retrieves temperature levels.
-`get_consolidated_data()`: Combines all retrieved data and outputs it as a JSON-formatted string.
-
-### Example Output
-After running the script, you should see JSON output similar to the following:
+`config.json`
 
 ```json
 {
-    "Humidity": [
-        {"Label": "Laundry Room", "Humidity": "45%"}
-    ],
-    "Doors and Windows": [
-        {"Label": "Front Door", "Status": "Closed"},
-        {"Label": "Back Door", "Status": "Open"}
-    ],
-    "Smoke Detectors": [
-        {"Label": "Hallway", "Status": "No Smoke Detected"}
-    ]
+  "email": "your_email@example.com",
+  "password": "your_password",
+  "panel_id": "your_panel_id",
+  "panel_code": "your_panel_code"
 }
 ```
 
-## Logging
-The script uses Python’s `logging` module to log success or error messages for each endpoint call. Adjust the logging level if needed.
+**Note**: Keep this file secure and do not share it, as it contains sensitive information.
 
-## Troubleshooting
-- **Invalid Credentials**: Ensure that your `SA_EMAIL` and `SA_PASSWORD` values are correct.
-- **API Version Issues**: The script is set to use `API-Version: 5`, which may need updating if the API changes.
-- **Endpoint Failures**: If specific endpoints fail, confirm they are available and your panel supports them.
+## Usage
+Run the client application:
+
+```bash
+python main.py
+```
+
+### Main Menu Options
+1. **Select a category**: Navigate and view different data categories from your system.
+2. **Rebuild cache**: Refresh the local cache of system data structures.
+3. **Show cache statistics**: Display statistics about the cached data.
+4. **Lock/Unlock Doors**: Control door locks.
+5. **Arm/Disarm System**: Control the alarm system status.
+F. **Fetch all data**: Retrieve and display all data from all categories.
+0. **Exit**: Exit the application.
+
+### Navigating Categories
+- Select a category to view its sections and items.
+- At each level, you can:
+  - Select a section or item by number to navigate further.
+  - Press F to fetch and display data for the current level.
+  - Press 0 to go back to the previous menu.
+
+### Example Session
+```mathematica
+Main Menu:
+1. Select a category
+2. Rebuild cache
+3. Show cache statistics
+4. Lock/Unlock Doors
+5. Arm/Disarm System
+F. Fetch all data
+0. Exit
+Select an option: 1
+
+Categories:
+1. Doors and Windows
+2. Temperatures
+3. Panel Status
+0. Back
+Select a category (by number): 1
+
+Doors and Windows > Sections:
+1. Front Door
+2. Back Door
+0. Back
+F. Fetch data for this level
+Select a section (by number) or F to fetch data: F
+
+Fetching data...
+{
+  "Front Door": "Closed",
+  "Back Door": "Open"
+}
+Press Enter to continue...
+```
 
 ## License
-This script is for personal and educational use. Please ensure you have permission to access the Sector Alarm API.
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Disclaimer
+This client application is not affiliated with or endorsed by Sector Alarm. Use it responsibly and at your own risk.
+
+## Contributing
+Contributions are welcome! Please submit a pull request or open an issue on GitHub.
+
+## Contact
+For questions or suggestions, please contact Jonathan Petersson <jpetersson@garnser.se>.

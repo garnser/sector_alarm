@@ -41,7 +41,7 @@ class SectorAlarmAPI:
     def try_panel_endpoints(self):
         """Attempt various /api/panel endpoints to find valid data."""
         potential_panel_endpoints = [
-            "GetTemperatures", "GetPanelStatus", "GetSmartplugStatus", "GetLockStatus", "GetLogs"
+            "GetPanelStatus", "GetSmartplugStatus", "GetLockStatus", "GetLogs"
         ]
 
         headers = {
@@ -66,7 +66,9 @@ class SectorAlarmAPI:
             "Doors and Windows": ("POST", f"{API_URL}/api/v2/housecheck/doorsandwindows"),
             "Leakage Detectors": ("POST", f"{API_URL}/api/v2/housecheck/leakagedetectors"),
             "Smoke Detectors": ("POST", f"{API_URL}/api/v2/housecheck/smokedetectors"),
-            "Cameras": ("GET", f"{API_URL}/api/v2/housecheck/cameras/{self.panel_id}")
+            "Cameras": ("GET", f"{API_URL}/api/v2/housecheck/cameras/{self.panel_id}"),
+            "Persons": ("GET", f"{API_URL}/api/persons/panels/{self.panel_id}"),
+            "Temperatures": ("POST", f"{API_URL}/api/v2/housecheck/temperatures")
         }
 
         headers = {

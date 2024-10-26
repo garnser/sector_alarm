@@ -45,13 +45,15 @@ Upon successful authentication, the script will attempt to retrieve data from mu
 
 ## Script Structure
 - `login()`: Authenticates with the Sector Alarm API and retrieves an authorization token.
-- `try_panel_endpoints()`: Fetches data from various /api/panel endpoints, including `GetTemperatures`, `GetPanelStatus`, `GetSmartplugStatus`, `GetLockStatus` and `GetLogs`.
+- `try_panel_endpoints()`: Fetches data from various /api/panel endpoints, including `GetPanelStatus`, `GetSmartplugStatus`, `GetLockStatus` and `GetLogs`.
 - `try_housecheck_endpoints()`: Fetches data from various `/api/housecheck` and `/api/v2/housecheck` endpoints, including:
 - `Humidity`: Retrieves humidity levels.
 - `Doors and Windows`: Retrieves the status of doors and windows.
 - `Leakage Detectors`: Retrieves data on any leakage detectors.
 - `Smoke Detectors`: Retrieves smoke detector statuses.
 - `Cameras`: Retrieves camera statuses.
+- `Persons`: Retrieves person information.
+- `Temperatures`: Retrieves temperature levels.
 `get_consolidated_data()`: Combines all retrieved data and outputs it as a JSON-formatted string.
 
 ### Example Output
@@ -59,10 +61,6 @@ After running the script, you should see JSON output similar to the following:
 
 ```json
 {
-    "GetTemperatures": [
-        {"Label": "Kitchen", "Temperature": "22"},
-        {"Label": "Living Room", "Temperature": "23"}
-    ],
     "Humidity": [
         {"Label": "Laundry Room", "Humidity": "45%"}
     ],

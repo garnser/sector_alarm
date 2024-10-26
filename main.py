@@ -68,7 +68,7 @@ class SectorAlarmAPI:
             "Smoke Detectors": ("POST", f"{API_URL}/api/v2/housecheck/smokedetectors"),
             "Cameras": ("GET", f"{API_URL}/api/v2/housecheck/cameras/{self.panel_id}"),
             "Persons": ("GET", f"{API_URL}/api/persons/panels/{self.panel_id}"),
-            "Temperatures": ("POST", f"{API_URL}/api/v2/housecheck/temperatures")
+            "Temperatures": ("POST", f"{API_URL}/api/v2/housecheck/temperatures"),
         }
 
         headers = {
@@ -100,7 +100,7 @@ def main():
 
     api = SectorAlarmAPI(email, password, panel_id)
     api.login()
-    api.try_panel_endpoints()
+#    api.try_panel_endpoints()
     api.try_housecheck_endpoints()
 
     # Output consolidated data in JSON format

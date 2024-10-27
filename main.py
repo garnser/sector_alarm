@@ -1,22 +1,67 @@
 # main.py
 
-from sectoralarm import SectorAlarmAPI, AuthenticationError
+import sys
+import getopt
 import json
 from datetime import datetime
+from sectoralarm import SectorAlarmAPI, AuthenticationError
 
 def main():
-    # Load configuration
+    # Parse command-line options
+    try:
+        opts, args = getopt.getopt(
+            sys.argv[1:], "he:p:i:c:md:", ["help", "email=", "password=", "panel_id=", "panel_code=", "mask", "data="])
+    except getopt.GetoptError as err:
+        # Print help information and exit
+        print(err)
+        usage()
+        sys.exit(2)
+
+    # Default values
+    config_overrides = {}
+    mask_sensitive = False
+    direct_data_ids = []
+
+    for o, a in opts:
+        if o in ("-h", "--help"):
+            usage()
+            sys.exit()
+        elif o in ("-e", "--email"):
+            config_overrides['email'] = a
+        elif o in ("-p", "--password"):
+            config_overrides['password'] = a
+        elif o in ("-i", "--panel_id"):
+            config_overrides['panel_id'] = a
+        elif o in ("-c", "--panel_code"):
+            config_overrides['panel_code'] = a
+        elif o in ("-m", "--mask"):
+            mask_sensitive = True
+        elif o in ("-d", "--data"):
+            # Assume that 'a' is a comma-separated list of IDs
+            direct_data_ids = a.split(',')
+        else:
+            assert False, "Unhandled option"
+
+    # Load configuration from file
     try:
         with open('config.json', 'r', encoding='utf-8') as config_file:
             config = json.load(config_file)
-        email = config.get("email")
-        password = config.get("password")
-        panel_id = config.get("panel_id")
-        panel_code = config.get("panel_code")
     except FileNotFoundError:
-        print("Configuration file 'config.json' not found.")
-        return
+        config = {}
 
+    # Override config with command-line options
+    email = config_overrides.get('email', config.get('email'))
+    password = config_overrides.get('password', config.get('password'))
+    panel_id = config_overrides.get('panel_id', config.get('panel_id'))
+    panel_code = config_overrides.get('panel_code', config.get('panel_code'))
+
+    # Check that required parameters are provided
+    if not email or not password or not panel_id:
+        print("Missing required configuration parameters.")
+        usage()
+        sys.exit(2)
+
+    # Initialize the API client
     api = SectorAlarmAPI(email, password, panel_id, panel_code)
     try:
         api.login()
@@ -24,9 +69,87 @@ def main():
         print(e)
         return
 
+    # Load cache
     api.cache_manager.load_cache()
-    # Start interactive session
-    interactive_mode(api)
+
+    # Set mask_sensitive flag
+    api.mask_sensitive = mask_sensitive
+
+    # If direct_data_ids are provided, fetch data for those IDs
+    if direct_data_ids:
+        fetch_direct_data(api, direct_data_ids)
+    else:
+        # Start interactive session
+        interactive_mode(api)
+
+def usage():
+    print("Usage:")
+    print("  main.py [options]")
+    print("Options:")
+    print("  -h, --help            Show this help message and exit")
+    print("  -e, --email=EMAIL     Email address")
+    print("  -p, --password=PWD    Password")
+    print("  -i, --panel_id=ID     Panel ID")
+    print("  -c, --panel_code=CODE Panel Code")
+    print("  -m, --mask            Mask sensitive data in output")
+    print("  -d, --data=IDS        Comma-separated list of component IDs to fetch data for")
+
+def mask_sensitive_data(data):
+    """Recursively mask sensitive data in the given data structure."""
+    sensitive_keys = {'SerialNo', 'Id', 'DeviceId', 'SerialString'}
+    if isinstance(data, dict):
+        masked_data = {}
+        for key, value in data.items():
+            if key in sensitive_keys:
+                masked_data[key] = '***MASKED***'
+            else:
+                masked_data[key] = mask_sensitive_data(value)
+        return masked_data
+    elif isinstance(data, list):
+        return [mask_sensitive_data(item) for item in data]
+    else:
+        return data
+
+def fetch_direct_data(api, direct_data_ids):
+    """Fetch and output data for the specified component IDs."""
+    all_data = {}
+    for category in api.cache_manager.cache.keys():
+        data = api.retrieve_category_data(category)
+        if data is not None:
+            all_data[category] = data
+
+    found_items = []
+    for data_id in direct_data_ids:
+        found = False
+        for category, data in all_data.items():
+            items = find_items_by_id(data, data_id)
+            if items:
+                for item in items:
+                    found_items.append((category, item))
+                found = True
+        if not found:
+            print(f"ID '{data_id}' not found.")
+
+    for category, item in found_items:
+        print(f"Data for ID '{item.get('Id', 'Unknown')}' in category '{category}':")
+        if api.mask_sensitive:
+            item = mask_sensitive_data(item)
+        print(json.dumps(item, indent=4, ensure_ascii=False))
+        print("-" * 40)
+
+def find_items_by_id(data, data_id):
+    """Recursively search for items with matching 'Id' in data."""
+    found_items = []
+    if isinstance(data, dict):
+        if str(data.get('Id', '')).lower() == data_id.lower():
+            found_items.append(data)
+        else:
+            for value in data.values():
+                found_items.extend(find_items_by_id(value, data_id))
+    elif isinstance(data, list):
+        for item in data:
+            found_items.extend(find_items_by_id(item, data_id))
+    return found_items
 
 def interactive_mode(api):
     while True:

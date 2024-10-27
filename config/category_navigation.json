@@ -1,0 +1,47 @@
+{
+    "Humidity": {
+        "navigable_keys": ["Sections"],
+        "sub_navigable_keys": ["Places"],
+        "sub_sub_navigable_keys": ["Components"]
+    },
+    "Doors and Windows": {
+        "navigable_keys": ["Sections"],
+        "sub_navigable_keys": ["Places"],
+        "sub_sub_navigable_keys": ["Components"]
+    },
+    "Leakage Detectors": {
+      "navigable_keys": [],
+        "sub_navigable_keys": [],
+        "sub_sub_navigable_keys": []
+    },
+    "Smoke Detectors": {
+        "navigable_keys": ["Sections"],
+        "sub_navigable_keys": ["Places"],
+        "sub_sub_navigable_keys": ["Components"]
+    },
+    "Cameras": {
+        "navigable_keys": ["Sections"],
+        "sub_navigable_keys": ["Places"],
+        "sub_sub_navigable_keys": ["Components"]
+    },
+    "Temperatures": {
+        "navigable_keys": ["Sections"],
+        "sub_navigable_keys": ["Places"],
+        "sub_sub_navigable_keys": ["Components"]
+    },
+    "Panel Status": {
+        "navigable_keys": []
+    },
+    "Smartplug Status": {
+        "navigable_keys": []
+    },
+    "Lock Status": {
+        "navigable_keys": []
+    },
+    "Logs": {
+        "navigable_keys": []
+    },
+    "Persons": {
+        "navigable_keys": []
+    }
+}

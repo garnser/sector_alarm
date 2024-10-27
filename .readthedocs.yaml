@@ -1,0 +1,33 @@
+# .readthedocs.yaml
+
+version: 2  # Specifies the version of the ReadTheDocs configuration schema
+
+# Define the Python environment for building the documentation
+python:
+  version: 3.8  # Specify the Python version to use
+  install:
+    - requirements: requirements.txt  # Install dependencies from requirements.txt
+    - method: pip
+      path: .  # Install the current package (sectoralarm) in editable mode
+
+# Configuration for building Sphinx documentation
+sphinx:
+  configuration: docs/conf.py  # Path to your Sphinx conf.py file
+
+# Additional build options
+build:
+  image: latest  # Use the latest available build image
+
+# Specify the formats to build
+formats:
+  - html  # Build HTML documentation
+  - pdf  # (Optional) Build PDF documentation if Sphinx is configured for it
+
+# Caching options to speed up builds (optional)
+cache:
+  pip: true  # Cache pip dependencies
+  build: true  # Cache build artifacts
+
+# Git submodules (if your project uses them)
+git:
+  submodules: false  # Set to true if your project uses Git submodules

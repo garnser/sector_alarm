@@ -17,7 +17,7 @@ def get_data_endpoints(panel_id):
         "Panel Status": ("GET", f"{API_URL}/api/panel/GetPanelStatus?panelId={panel_id}"),
         "Smartplug Status": ("GET", f"{API_URL}/api/panel/GetSmartplugStatus?panelId={panel_id}"),
         "Lock Status": ("GET", f"{API_URL}/api/panel/GetLockStatus?panelId={panel_id}"),
-        "Logs": ("GET", f"{API_URL}/api/panel/GetLogs?panelId={panel_id}&take=100"),
+        "Logs": ("GET", f"{API_URL}/api/panel/GetLogs?panelId={panel_id}"),#&take=100"),
     }
     return endpoints
 
